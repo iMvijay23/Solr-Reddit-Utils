@@ -11,6 +11,7 @@ import re
 import datetime as dt
 from argparse import ArgumentParser
 import logging
+from solr_utils import SolrHelper
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
@@ -18,12 +19,8 @@ logger = logging.getLogger()
 #############
 # Settings
 #############
-from solr_utils import SolrHelper
 with open("reddit_object_datatypes.json") as f:
     reddit_data_types = json.load(f)
-integer_columns = [c for c, v in reddit_data_types.items() if v == "int"]
-text_columns = ["body", "title", "selftext"]
-date_columns = ["created_utc", "retrieved_on", "author_created_utc"]
 
 ################
 # Compile regex
@@ -102,6 +99,13 @@ def is_submission(columns):
     return ("selftext" in columns) and ("title" in columns)
 
 
+def fill_gildings(x):
+    """Fix gildings object NaNs"""
+    if pd.isna(x):
+        return {'gid_1': 0, 'gid_2': 0, 'gid_3': 0}
+    return x
+
+
 ##########
 # Main
 ##########
@@ -138,9 +142,12 @@ if __name__ == "__main__":
     for i, input_file in tqdm(enumerate(args.reddit_files), total=len(args.reddit_files), desc="Loading"):
         # Load data
         try:
-            df = pd.read_json(input_file, dtype=reddit_data_types, lines=args.jsonlines)
-            logger.debug(f"{df.dtypes=}")
-            exit(0)
+            df = pd.read_json(
+                input_file,
+                dtype=reddit_data_types,
+                lines=args.jsonlines
+            )
+            logger.debug(f"{input_file=} {len(df)=}")
         except (OSError, ValueError) as err:
             logger.error(f"Failed reading file {input_file}:\n{err}")
             continue
@@ -152,31 +159,24 @@ if __name__ == "__main__":
             df = df[~df.id.isin(completed_ids)]
             if df.empty:
                 continue
-        columns = set(df.columns)
         # Drop unneeded columns
-        df.drop(columns=[c for c in columns if c not in reddit_data_types], inplace=True)
+        df.drop(columns=[c for c in df.columns if c not in reddit_data_types], inplace=True)
         # Conflict with the field "score" and the Solr relevance "score"
         df.rename(columns={"score": "post_score"}, inplace=True)
-        columns = set(df.columns)
 
         # Add submission vs comment field
-        df["is_submission"] = is_submission(columns)
+        df["is_submission"] = is_submission(df.columns)
 
         # Parse dates
+        date_columns = [c for c in df.columns if reddit_data_types.get(c, "") == "datetime64"]
+        df.loc[:, date_columns].fillna(0, inplace=True)
         for date_col in date_columns:
-            if date_col in columns:
-                df[date_col] = df[date_col].fillna(0)
-                df[date_col] = df[date_col].map(parse_timestamp)
+            df[date_col] = df[date_col].map(parse_timestamp)
 
         # Fix NaNs
-        for col in integer_columns:
-            if col in columns:
-                df[col].fillna(0, inplace=True)
-        if "gildings" in columns:
-            def fill_gildings(x):
-                if pd.isna(x):
-                    return {'gid_1': 0, 'gid_2': 0, 'gid_3': 0}
-                return x
+        integer_columns = [c for c in df.columns if reddit_data_types.get(c, "") == "int"]
+        df.loc[:, integer_columns].fillna(0, inplace=True)
+        if "gildings" in df.columns:
             df["gildings"] = df["gildings"].map(fill_gildings)
 
         # Construct permalink
@@ -191,3 +191,5 @@ if __name__ == "__main__":
             if args.debug:
                 logger.debug(f"Exiting.")
                 exit(1)
+        if args.debug and i > 5:
+            break
