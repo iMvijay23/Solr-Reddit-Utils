@@ -1,9 +1,3 @@
-# Freeze config files so they can be edited locally
-freeze = update-index --assume-unchanged
-thaw = update-index --no-assume-unchanged
-git freeze conf/*
-git freeze setup_core.sh
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
