@@ -8,13 +8,13 @@
 #############################
 SCRIPT_HOME=$(pwd)
 PORT=8983
-CORE="BSPH-cannabis-reddit"
-SOLR_HOME="/home/aadelucia/solr-8.9.0"
-REDDIT_DATA=( ${CANNABIS_DATA}/*/submissions/* )
+CORE="FILL THIS"
+SOLR_HOME="FILL THIS"
+REDDIT_DATA="FILL THIS"
 ENDPOINT="http://localhost:${PORT}/solr/${CORE}"
 CORE_HOME="${SOLR_HOME}/server/solr/${CORE}"
 CONFIG="${SCRIPT_HOME}/conf"
-CREATE_CORE=true
+CREATE_CORE=false
 
 # Create Solr core. Can also create it in Solr Admin page.
 # Assumes Solr is running
@@ -57,6 +57,5 @@ cd ${SCRIPT_HOME}
 python load_reddit_into_solr.py \
   --solr-endpoint "${ENDPOINT}" \
   --reddit-files "${REDDIT_DATA[@]}" \
-  --jsonlines \
-  --debug
+  --jsonlines
 
