@@ -1,0 +1,11 @@
+#**
+ *  Called for each matching document
+ *#
+
+#set($docId = $doc.getFieldValue('id'))
+
+<div class="result-document">
+
+  #parse("post_doc.vm")
+
+</div>

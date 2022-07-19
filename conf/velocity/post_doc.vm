@@ -1,0 +1,15 @@
+#**
+ *  Render a hit representing a reddit post/comment
+ *#
+
+<div class="result-title"><b>Document #field('id')</b></div>
+<div>Relevance Score: #field('score')</div>
+<div>Subreddit: #field('subreddit')</div>
+<div>Author: #field('author')</div>
+<div>Created at: #field('created_utc')</div>
+<div>Score: #field('post_score')</div>
+<div>Body: #field('body')</div>
+<div>Mentioned Brands: #field('brands')</div>
+<div>Subreddit Annotation: #field('annotations.subreddit')</div>
+<div>Permalink: <a target="_blank" href="$doc.getFieldValue('permalink')">#field('permalink')</a></div>
+#parse('debug.vm')
