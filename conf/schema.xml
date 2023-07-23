@@ -208,6 +208,29 @@
    <!-- non-tokenized version of manufacturer to make it easier to sort or group
         results by manufacturer.  copied from "manu" via copyField -->
    <field name="manu_exact" type="string" indexed="true" stored="false"/>
+   <!-- ngram searchable field -->
+   <field name="text_ngram" type="textngrams" indexed="true" stored="false" multiValued="true"/>
+
+   <field name="title_ngram" type="textngrams" indexed="true" stored="false" multiValued="true"/>
+
+   <field name="selftext_ngram" type="textngrams" indexed="true" stored="false" multiValued="true"/>
+   <field name="body_ngram" type="textngrams" indexed="true" stored="false" multiValued="true"/>
+   <field name="description_ngram" type="textngrams" indexed="true" stored="false" multiValued="true"/>
+   <field name="header_title_ngram" type="textngrams" indexed="true" stored="false" multiValued="true"/>
+
+   <!-- Adding the below fields for authors file indexing-->
+   <field name="author_id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
+   <field name="author_retrieved_on" type="date" indexed="true" stored="true"/>
+   <field name="author_name" type="string" indexed="true" stored="true"/>
+   <field name="author_created_utc" type="date" indexed="true" stored="true"/>
+   <field name="author_link_karma" type="int" indexed="true" stored="true"/>
+   <field name="author_comment_karma" type="int" indexed="true" stored="true"/>
+   <field name="author_profile_img" type="string" indexed="true" stored="true"/>
+   <field name="author_profile_color" type="string" indexed="true" stored="true"/>
+   <field name="author_profile_over_18" type="boolean" indexed="true" stored="true"/>
+   
+   <!--end of authors fields-->
+
 
 
    <!--
@@ -316,6 +339,26 @@
    <!-- Text fields from SolrCell to search by default in our catch-all field -->
    <copyField source="title" dest="text"/>
 
+   <!-- copyfields for ngrams searchable text  -->
+   <!-- ngram catchall field, containing all other searchable text fields -->
+
+
+<!-- Copy all fields to be searched with ngrams into the "text_ngram" field -->
+   <copyField source="title" dest="text_ngram"/>
+   <copyField source="selftext" dest="text_ngram"/>
+   <copyField source="body" dest="text_ngram"/>
+   <copyField source="description" dest="text_ngram"/>
+   <copyField source="header_title" dest="text_ngram"/>
+
+   <copyField source="title" dest="title_ngram"/>
+   <copyField source="selftext" dest="selftext_ngram"/>
+   <copyField source="body" dest="body_ngram"/>
+   <copyField source="description" dest="description_ngram"/>
+   <copyField source="header_title" dest="header_title_ngram"/>
+   
+
+
+
 	
    <!-- Above, multiple source fields are copied to the [text] field. 
 	  Another way to map multiple source fields to the same 
@@ -335,6 +378,22 @@
          Class names starting with "solr" refer to java classes in a
        standard package such as org.apache.solr.analysis
     -->
+    <!-- substring searchable textngrams -->
+    <!-- field type for ngram indexing -->
+    <fieldType name="textngrams" class="solr.TextField" positionIncrementGap="100">
+      <analyzer type="index">
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
+        <filter class="solr.NGramFilterFactory" minGramSize="2" maxGramSize="15"/>
+      </analyzer>
+      <analyzer type="query">
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
+      </analyzer>
+    </fieldType>
+
 
     <!-- The StrField type is not analyzed, but indexed/stored verbatim.
        It supports doc values but in that case the field needs to be
@@ -744,7 +803,9 @@
     <fieldType name="point" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
 
     <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
-    <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
+    <!--<fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/> -->
+    <fieldType name="location" class="solr.LatLonPointSpatialField"/>
+
 
     <!-- An alternative geospatial field type new to Solr 4.  It supports multiValued and polygon shapes.
       For more information about this and other Spatial fields new to Solr 4, see:
